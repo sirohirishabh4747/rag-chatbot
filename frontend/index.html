@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocuMind — AI Knowledge Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root {
+      --bg-primary: #0f0f13;
+      --bg-secondary: #16161e;
+      --bg-tertiary: #1e1e2a;
+      --bg-card: #22222f;
+      --bg-hover: #2a2a38;
+      --border: #2e2e3e;
+      --border-light: #3a3a50;
+      --accent: #7c6af7;
+      --accent-hover: #9280ff;
+      --accent-dim: #7c6af720;
+      --accent-2: #4ecca3;
+      --accent-2-dim: #4ecca320;
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898b0;
+      --text-muted: #5c5c78;
+      --success: #4ecca3;
+      --warning: #f7c948;
+      --error: #f76a6a;
+      --user-bubble: #7c6af7;
+      --ai-bubble: #1e1e2a;
+      --sidebar-w: 300px;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* ===== SIDEBAR ===== */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      -webkit-text-fill-color: var(--text-muted);
+    }
+
+    /* Upload area */
+    .upload-zone {
+      border: 2px dashed var(--border-light);
+      border-radius: var(--radius);
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-tertiary);
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .upload-zone .upload-icon {
+      font-size: 28px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .upload-zone p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .upload-zone strong { color: var(--text-primary); }
+    #file-input { display: none; }
+
+    .upload-progress {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .progress-bar-wrap {
+      background: var(--bg-card);
+      border-radius: 100px;
+      height: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      border-radius: 100px;
+      width: 0%;
+      transition: width 0.3s;
+      animation: progress-pulse 1.5s infinite;
+    }
+
+    @keyframes progress-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Documents list */
+    .docs-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .docs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .docs-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .docs-count {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 100px;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 4px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+      cursor: default;
+    }
+
+    .doc-item:hover { background: var(--bg-hover); border-color: var(--border-light); }
+
+    .doc-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .doc-icon.pdf { background: #ff6b6b20; color: #ff6b6b; }
+    .doc-icon.code { background: #4ecca320; color: #4ecca3; }
+    .doc-icon.text { background: #7c6af720; color: #7c6af7; }
+    .doc-icon.data { background: #f7c94820; color: #f7c948; }
+
+    .doc-info { flex: 1; min-width: 0; }
+
+    .doc-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .doc-delete {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .doc-delete:hover { background: #f76a6a20; color: var(--error); }
+
+    .empty-docs {
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .empty-docs i { font-size: 28px; margin-bottom: 8px; display: block; }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+    .dot.offline { background: var(--error); }
+
+    /* ===== MAIN AREA ===== */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .chat-header {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-header-left { display: flex; align-items: center; gap: 12px; }
+
+    .chat-title { font-size: 15px; font-weight: 600; }
+    .chat-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+    .header-badge {
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent)30;
+    }
+
+    .btn-clear {
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-clear:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    /* Chat messages */
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scroll-behavior: smooth;
+    }
+
+    #chat-messages::-webkit-scrollbar { width: 4px; }
+    #chat-messages::-webkit-scrollbar-track { background: transparent; }
+    #chat-messages::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+
+    /* Welcome screen */
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .welcome-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px var(--accent)40;
+    }
+
+    .welcome-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .welcome-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      max-width: 420px;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+
+    .welcome-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 520px;
+    }
+
+    .chip {
+      padding: 8px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-tertiary);
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* Message bubbles */
+    .message-row {
+      display: flex;
+      gap: 12px;
+      animation: fadeInUp 0.2s ease;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-row.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .avatar.user-av { background: linear-gradient(135deg, var(--accent), #a06aff); }
+    .avatar.ai-av { background: linear-gradient(135deg, var(--accent-2), #3ab8a0); }
+
+    .message-content { max-width: 72%; display: flex; flex-direction: column; gap: 8px; }
+    .message-row.user .message-content { align-items: flex-end; }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.65;
+      word-break: break-word;
+    }
+
+    .bubble.user {
+      background: var(--user-bubble);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble.ai {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* AI message formatting */
+    .bubble.ai strong { color: var(--accent-2); }
+    .bubble.ai code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-card);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--accent-2);
+    }
+
+    .bubble.ai pre {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+
+    .bubble.ai pre code {
+      background: none;
+      padding: 0;
+      font-size: 12px;
+    }
+
+    .bubble.ai ul, .bubble.ai ol {
+      padding-left: 18px;
+      margin: 4px 0;
+    }
+
+    .bubble.ai li { margin: 3px 0; }
+
+    .bubble.ai p { margin: 4px 0; }
+
+    .msg-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    /* Source cards */
+    .sources-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+    .sources-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .source-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .source-card {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 11px;
+      transition: all 0.15s;
+    }
+
+    .source-card:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .source-card .s-icon { font-size: 12px; color: var(--accent); }
+
+    .source-card .s-name {
+      color: var(--text-primary);
+      font-weight: 500;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .source-card .s-score {
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 1px 6px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* Typing indicator */
+    .typing-bubble {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      border-bottom-left-radius: 4px;
+      padding: 14px 18px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: typing-bounce 1.2s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .no-docs-warning {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      background: #f7c94815;
+      border: 1px solid #f7c94830;
+      font-size: 12px;
+      color: var(--warning);
+      margin-bottom: 10px;
+    }
+
+    .no-docs-warning.show { display: flex; }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      transition: border-color 0.15s;
+    }
+
+    .input-box:focus-within { border-color: var(--accent); }
+
+    #message-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      resize: none;
+      max-height: 150px;
+      line-height: 1.5;
+      scrollbar-width: thin;
+    }
+
+    #message-input::placeholder { color: var(--text-muted); }
+
+    .input-actions { display: flex; gap: 6px; align-items: center; }
+
+    .btn-attach {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+
+    .btn-attach:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+    .btn-send {
+      width: 34px;
+      height: 34px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+
+    .btn-send:hover { opacity: 0.9; transform: scale(1.05); }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .input-hint {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 7px;
+      text-align: center;
+    }
+
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 999;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      font-size: 13px;
+      box-shadow: var(--shadow);
+      animation: toastIn 0.2s ease;
+      max-width: 320px;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error   { border-left: 3px solid var(--error); }
+    .toast.info    { border-left: 3px solid var(--accent); }
+
+    .toast .t-icon { font-size: 16px; }
+    .toast.success .t-icon { color: var(--success); }
+    .toast.error   .t-icon { color: var(--error); }
+    .toast.info    .t-icon { color: var(--accent); }
+
+    /* Scrollbar styles */
+    .docs-section::-webkit-scrollbar { width: 3px; }
+    .docs-section::-webkit-scrollbar-track { background: transparent; }
+    .docs-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 260px; }
+      #sidebar { position: absolute; left: -100%; transition: left 0.3s; }
+      #sidebar.open { left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div class="logo-text">DocuMind</div>
+        <div class="logo-sub">AI Knowledge Assistant</div>
+      </div>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" multiple
+        accept=".pdf,.txt,.md,.py,.js,.ts,.jsx,.tsx,.java,.cpp,.c,.h,.cs,.go,.rs,.rb,.php,.html,.css,.json,.yaml,.yml,.xml,.sh,.sql,.r,.swift,.kt,.scala" />
+      <div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+      <p><strong>Drop files here</strong><br/>or click to browse<br/><span style="font-size:10px;color:var(--text-muted)">PDF, Code, TXT, MD &amp; more</span></p>
+      <div class="upload-progress" id="upload-progress">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;" id="upload-status-text">Uploading...</div>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <div class="docs-section">
+    <div class="docs-header">
+      <span class="docs-title">Knowledge Base</span>
+      <span class="docs-count" id="docs-count">0</span>
+    </div>
+    <div id="docs-list">
+      <div class="empty-docs">
+        <i class="fas fa-folder-open"></i>
+        No documents yet.<br/>Upload PDFs or code files to get started.
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="status-dot" id="status-dot">
+      <span class="dot" id="status-dot-el"></span>
+      <span id="status-text">Connecting...</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <div>
+        <div class="chat-title">Ask your documents anything</div>
+        <div class="chat-subtitle">Powered by Groq LLaMA · RAG · ChromaDB</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="header-badge" id="model-badge">LLaMA 3.1 8B</span>
+      <button class="btn-clear" onclick="clearChat()"><i class="fas fa-trash-alt"></i> Clear Chat</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages">
+    <div class="welcome-screen" id="welcome-screen">
+      <div class="welcome-logo">🧠</div>
+      <h1 class="welcome-title">DocuMind Assistant</h1>
+      <p class="welcome-desc">
+        Upload your PDFs, source code, or text files — then ask questions in plain English.
+        I'll answer using <strong>only your documents</strong> and always cite my sources.
+      </p>
+      <div class="welcome-chips">
+        <span class="chip" onclick="insertChip(this)">📄 Summarize my document</span>
+        <span class="chip" onclick="insertChip(this)">🔍 What are the key points?</span>
+        <span class="chip" onclick="insertChip(this)">💡 Explain the main concepts</span>
+        <span class="chip" onclick="insertChip(this)">📋 List all topics covered</span>
+        <span class="chip" onclick="insertChip(this)">🐛 Find issues in this code</span>
+        <span class="chip" onclick="insertChip(this)">🔗 Compare different sections</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <div class="no-docs-warning" id="no-docs-warning">
+      <i class="fas fa-triangle-exclamation"></i>
+      No documents uploaded yet. Upload files first for document-based answers.
+    </div>
+    <div class="input-box">
+      <textarea id="message-input" placeholder="Ask a question about your documents..." rows="1"
+        onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
+      <div class="input-actions">
+        <button class="btn-attach" title="Upload file" onclick="document.getElementById('file-input').click()">
+          <i class="fas fa-paperclip"></i>
+        </button>
+        <button class="btn-send" id="send-btn" onclick="sendMessage()" title="Send (Enter)">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+    <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
+  </div>
+</main>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+  const API = 'http://localhost:8000/api';
+  let conversationHistory = [];
+  let isLoading = false;
+  let docCount = 0;
+
+  // ===== INIT =====
+  window.addEventListener('load', async () => {
+    await checkHealth();
+    await loadDocuments();
+    setupDragDrop();
+    document.getElementById('file-input').addEventListener('change', e => handleFiles(e.target.files));
+    document.getElementById('message-input').focus();
+  });
+
+  async function checkHealth() {
+    try {
+      const res = await fetch(`${API}/health`);
+      if (res.ok) {
+        setStatus(true);
+      } else {
+        setStatus(false);
+      }
+    } catch {
+      setStatus(false);
+      showToast('Cannot connect to backend. Is the server running?', 'error');
+    }
+  }
+
+  function setStatus(online) {
+    const dot = document.getElementById('status-dot-el');
+    const txt = document.getElementById('status-text');
+    dot.className = 'dot' + (online ? '' : ' offline');
+    txt.textContent = online ? 'Backend connected' : 'Backend offline';
+  }
+
+  // ===== DOCUMENTS =====
+  async function loadDocuments() {
+    try {
+      const res = await fetch(`${API}/documents`);
+      const data = await res.json();
+      renderDocuments(data.documents);
+    } catch { /* backend might not be ready yet */ }
+  }
+
+  function renderDocuments(docs) {
+    docCount = docs.length;
+    document.getElementById('docs-count').textContent = docCount;
+    const list = document.getElementById('docs-list');
+    const warn = document.getElementById('no-docs-warning');
+
+    if (!docs.length) {
+      list.innerHTML = `<div class="empty-docs"><i class="fas fa-folder-open"></i>No documents yet.<br/>Upload PDFs or code files to get started.</div>`;
+      warn.classList.add('show');
+      return;
+    }
+
+    warn.classList.remove('show');
+    list.innerHTML = docs.map(doc => `
+      <div class="doc-item" id="doc-${sanitizeId(doc.filename)}">
+        <div class="doc-icon ${getDocClass(doc.filename)}">${getDocEmoji(doc.filename)}</div>
+        <div class="doc-info">
+          <div class="doc-name" title="${doc.filename}">${doc.filename}</div>
+          <div class="doc-meta">${doc.chunks} chunk${doc.chunks !== 1 ? 's' : ''} indexed</div>
+        </div>
+        <button class="doc-delete" onclick="deleteDoc('${doc.filename}')" title="Remove from knowledge base">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function getDocClass(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    if (ext === 'pdf') return 'pdf';
+    if (['py','js','ts','java','cpp','c','h','go','rs','rb','cs','php','swift','kt','scala','sh','sql','jsx','tsx','vue'].includes(ext)) return 'code';
+    if (['json','yaml','yml','xml'].includes(ext)) return 'data';
+    return 'text';
+  }
+
+  function getDocEmoji(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    const map = { pdf:'📄', py:'🐍', js:'🟨', ts:'🔷', java:'☕', cpp:'⚙️', c:'⚙️', go:'🐹', rs:'🦀', rb:'💎', php:'🐘', swift:'🍎', kt:'🔶', sql:'🗃️', sh:'💻', json:'📋', yaml:'📋', yml:'📋', md:'📝', html:'🌐', css:'🎨' };
+    return map[ext] || '📄';
+  }
+
+  function sanitizeId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+  async function deleteDoc(filename) {
+    if (!confirm(`Remove "${filename}" from the knowledge base?`)) return;
+    try {
+      await fetch(`${API}/documents/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+      showToast(`"${filename}" removed`, 'success');
+      await loadDocuments();
+    } catch {
+      showToast('Failed to delete document', 'error');
+    }
+  }
+
+  // ===== FILE UPLOAD =====
+  function setupDragDrop() {
+    const zone = document.getElementById('upload-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      handleFiles(e.dataTransfer.files);
+    });
+    zone.addEventListener('click', e => {
+      if (e.target.closest('.doc-delete')) return;
+      document.getElementById('file-input').click();
+    });
+  }
+
+  async function handleFiles(files) {
+    if (!files.length) return;
+    const fileArr = Array.from(files);
+
+    const progress = document.getElementById('upload-progress');
+    const bar = document.getElementById('progress-bar');
+    const statusText = document.getElementById('upload-status-text');
+    progress.style.display = 'block';
+
+    for (let i = 0; i < fileArr.length; i++) {
+      const file = fileArr[i];
+      statusText.textContent = `Uploading ${file.name}...`;
+      bar.style.width = `${Math.round(((i) / fileArr.length) * 100)}%`;
+
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res = await fetch(`${API}/upload`, { method: 'POST', body: form });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✓ ${file.name} — ${data.chunks_indexed} chunks indexed`, 'success');
+        } else {
+          showToast(`✗ ${file.name}: ${data.detail}`, 'error');
+        }
+      } catch {
+        showToast(`✗ Upload failed for ${file.name}`, 'error');
+      }
+    }
+
+    bar.style.width = '100%';
+    statusText.textContent = 'Done!';
+    setTimeout(() => {
+      progress.style.display = 'none';
+      bar.style.width = '0%';
+    }, 1500);
+
+    document.getElementById('file-input').value = '';
+    await loadDocuments();
+  }
+
+  // ===== CHAT =====
+  async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const msg = input.value.trim();
+    if (!msg || isLoading) return;
+
+    input.value = '';
+    autoResize(input);
+    isLoading = true;
+    document.getElementById('send-btn').disabled = true;
+
+    hideWelcome();
+    appendUserMessage(msg);
+    const typingId = appendTyping();
+
+    try {
+      const res = await fetch(`${API}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, conversation_history: conversationHistory })
+      });
+
+      removeTyping(typingId);
+
+      if (!res.ok) {
+        const err = await res.json();
+        appendAIMessage('⚠️ Error: ' + (err.detail || 'Unknown error'), [], false);
+      } else {
+        const data = await res.json();
+        appendAIMessage(data.answer, data.sources, data.has_context);
+
+        // Update history
+        conversationHistory.push({ role: 'user', content: msg });
+        conversationHistory.push({ role: 'assistant', content: data.answer });
+        if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
+      }
+    } catch {
+      removeTyping(typingId);
+      appendAIMessage('⚠️ Could not reach the backend. Please make sure the server is running.', [], false);
+    }
+
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+
+  function appendUserMessage(text) {
+    const msgs = document.getElementById('chat-messages');
+    const row = document.createElement('div');
+    row.className = 'message-row user';
+    row.innerHTML = `
+      <div class="avatar user-av"><i class="fas fa-user"></i></div>
+      <div class="message-content">
+        <div class="bubble user">${escapeHtml(text)}</div>
+        <span class="msg-time">${getTime()}</span>
+      </div>`;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function appendAIMessage(text, sources, hasContext) {
+    const msgs = document.getElementById('chat-messages');
+    const row = document.createElement('div');
+    row.className = 'message-row';
+
+    const formattedText = formatMarkdown(text);
+
+    let sourcesHtml = '';
+    if (sources && sources.length > 0) {
+      const cards = sources.map(s => `
+        <div class="source-card" title="${s.filename}">
+          <span class="s-icon"><i class="fas ${getSourceIcon(s.filename)}"></i></span>
+          <span class="s-name">${s.filename}</span>
+          <span class="s-score">${s.relevance_pct}%</span>
+        </div>`).join('');
+      sourcesHtml = `
+        <div class="sources-wrap">
+          <span class="sources-label"><i class="fas fa-quote-left"></i> Sources Used</span>
+          <div class="source-cards">${cards}</div>
+        </div>`;
+    }
+
+    row.innerHTML = `
+      <div class="avatar ai-av">🧠</div>
+      <div class="message-content">
+        <div class="bubble ai">${formattedText}</div>
+        ${sourcesHtml}
+        <span class="msg-time">${getTime()} · ${hasContext ? 'from knowledge base' : 'no docs uploaded'}</span>
+      </div>`;
+    msgs.appendChild(row);
+    scrollBottom();
+  }
+
+  function appendTyping() {
+    const msgs = document.getElementById('chat-messages');
+    const id = 'typing-' + Date.now();
+    const row = document.createElement('div');
+    row.className = 'message-row';
+    row.id = id;
+    row.innerHTML = `
+      <div class="avatar ai-av">🧠</div>
+      <div class="message-content">
+        <div class="typing-bubble">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>`;
+    msgs.appendChild(row);
+    scrollBottom();
+    return id;
+  }
+
+  function removeTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function hideWelcome() {
+    const w = document.getElementById('welcome-screen');
+    if (w) w.remove();
+  }
+
+  function clearChat() {
+    conversationHistory = [];
+    const msgs = document.getElementById('chat-messages');
+    msgs.innerHTML = '';
+    // Re-add welcome screen
+    const welcome = document.createElement('div');
+    welcome.className = 'welcome-screen';
+    welcome.id = 'welcome-screen';
+    welcome.innerHTML = `
+      <div class="welcome-logo">🧠</div>
+      <h1 class="welcome-title">DocuMind Assistant</h1>
+      <p class="welcome-desc">Upload your PDFs, source code, or text files — then ask questions in plain English. I'll answer using <strong>only your documents</strong> and always cite my sources.</p>
+      <div class="welcome-chips">
+        <span class="chip" onclick="insertChip(this)">📄 Summarize my document</span>
+        <span class="chip" onclick="insertChip(this)">🔍 What are the key points?</span>
+        <span class="chip" onclick="insertChip(this)">💡 Explain the main concepts</span>
+        <span class="chip" onclick="insertChip(this)">📋 List all topics covered</span>
+        <span class="chip" onclick="insertChip(this)">🐛 Find issues in this code</span>
+        <span class="chip" onclick="insertChip(this)">🔗 Compare different sections</span>
+      </div>`;
+    msgs.appendChild(welcome);
+    showToast('Chat cleared', 'info');
+  }
+
+  // ===== HELPERS =====
+  function formatMarkdown(text) {
+    return text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+      .replace(/^## (.+)$/gm, '<strong style="font-size:15px">$1</strong>')
+      .replace(/^# (.+)$/gm, '<strong style="font-size:16px">$1</strong>')
+      .replace(/^\- (.+)$/gm, '• $1')
+      .replace(/^\d+\. (.+)$/gm, (_, p) => `${p}`)
+      .replace(/\n/g, '<br/>');
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function getSourceIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    if (ext === 'pdf') return 'fa-file-pdf';
+    if (['py','js','ts','java','cpp','c','go','rs'].includes(ext)) return 'fa-file-code';
+    if (['json','yaml','yml','xml'].includes(ext)) return 'fa-file-lines';
+    return 'fa-file-alt';
+  }
+
+  function getTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function scrollBottom() {
+    const msgs = document.getElementById('chat-messages');
+    setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+  }
+
+  function insertChip(el) {
+    const input = document.getElementById('message-input');
+    input.value = el.textContent.replace(/^[^\w]+/, '').trim();
+    input.focus();
+  }
+
+  function showToast(message, type = 'info') {
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fas ${icons[type]} t-icon"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(4px)'; toast.style.transition = 'all 0.3s'; setTimeout(() => toast.remove(), 300); }, 3500);
+  }
+</script>
+</body>
+</html>
